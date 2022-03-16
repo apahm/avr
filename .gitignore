@@ -1,0 +1,5 @@
+uart_lib.atsln
+.vs
+uart_lib/Debug
+uart_lib/uart_lib.componentinfo.xml
+uart_lib/uart_lib.cproj
