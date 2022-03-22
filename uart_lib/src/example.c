@@ -35,6 +35,15 @@ uint8_t length_msg = 0;
 
 void main_parser()
 {
+	if(command_in[2] == REQ_TEMP_DS18B20)
+	{
+		
+	}
+	else if(command_in[2] == REQ_SEACH_DS18B20)
+	{
+		
+	}
+	
 }
 
 void copy_command()
@@ -84,12 +93,11 @@ void printTemp(double d)
 	itoa(fs[1], num, 10);
 	strcat(text, num);
 	strcat(text, "'C");
-	// uart_puts(text);
+	uart_puts(text);
 }
 
 double getTemp(void)
 {
-
 	uint8_t temperatureL;
 	uint8_t temperatureH;
 	double retd = 0;
@@ -110,18 +118,73 @@ double getTemp(void)
 	return retd;
 }
 
+inline void printTempMult(double d, uint8_t i) {
+	char text[17] = "T[";
+	int fs[2];
+	char num[5];
+	
+	itoa(i, num, 10);
+	strcat(text, num);
+	strcat(text, "]=");
+	
+	explodeDoubleNumber(fs, d);
+	if (d < 0) {
+		strcat(text, "-");
+	}
+	itoa(fs[0], num, 10);
+	strcat(text, num);
+	strcat(text, ".");
+	itoa(fs[1], num, 10);
+	strcat(text, num);
+	strcat(text, "'C");
+	uart_puts(text);
+	uart_puts(RETURN_NEWLINE);
+}
+
+double getTempMult(uint64_t ds18b20s) {
+	uint8_t temperatureL;
+	uint8_t temperatureH;
+	double retd = 0;
+
+
+	setDevice(ds18b20s);
+	writeByte(CMD_CONVERTTEMP);
+
+	_delay_ms(750);
+
+	setDevice(ds18b20s);
+	writeByte(CMD_RSCRATCHPAD);
+
+	temperatureL = readByte();
+	temperatureH = readByte();
+
+	retd = ((temperatureH << 8) + temperatureL) * 0.0625;
+
+	return retd;
+}
+
+
+
 int main(void)
 {
 	double temperature;
 
 	uart_init(UART_BAUD_SELECT(UART_BAUD_RATE, F_CPU));
 
-	oneWireInit(PINB0);
+	oneWireInit(PINC0);
 
 	sei();
-
-	temperature = getTemp();
-	printTemp(temperature);
+	
+	const uint8_t n_ds18b20 = 2;
+	uint64_t roms[n_ds18b20];
+	
+	for (uint8_t i = 0; i < n_ds18b20; i++)
+	{
+		temperature = getTempMult(roms[i]);
+		printTempMult(temperature,i);
+		uart_puts(RETURN_NEWLINE);
+		_delay_ms(500);
+	}
 
 	memset(data_in, 0, 128);
 

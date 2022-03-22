@@ -3,8 +3,15 @@
 
 
 #define F_CPU              2000000UL
-#define ONE_WIRE_PORT      PORTB
-#define ONE_WIRE_DDR       DDRB
-#define ONE_WIRE_PIN       PINB
+#define ONE_WIRE_PORT      PORTC
+#define ONE_WIRE_DDR       DDRC
+#define ONE_WIRE_PIN       PINC
+
+#define REQ_TEMP_DS18B20 0x18
+#define ANS_TEMP_DS18B20 0x19
+
+#define REQ_SEACH_DS18B20 0x20
+#define ANS_SEACH_DS18B20 0x21
+
 
 #endif /* CONFIG_H_ */
