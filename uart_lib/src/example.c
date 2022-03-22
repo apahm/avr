@@ -163,8 +163,6 @@ double getTempMult(uint64_t ds18b20s) {
 	return retd;
 }
 
-
-
 int main(void)
 {
 	double temperature;
@@ -175,8 +173,11 @@ int main(void)
 
 	sei();
 	
+	
 	const uint8_t n_ds18b20 = 2;
 	uint64_t roms[n_ds18b20];
+	
+	searchRom(roms, n_ds18b20);
 	
 	for (uint8_t i = 0; i < n_ds18b20; i++)
 	{
