@@ -37,11 +37,57 @@ void main_parser()
 {
 	if(command_in[2] == REQ_TEMP_DS18B20)
 	{
+		unsigned char command_out[9];
+		memset(command_out,0,9);
+		
+		command_out[0] = 0x01;
+		command_out[1] = 9;
+		command_out[2] = ANS_TEMP_DS18B20;
+		
+		uint8_t temperatureL;
+		uint8_t temperatureH;
+
+		skipRom();
+		writeByte(CMD_CONVERTTEMP);
+
+		_delay_ms(750);
+
+		skipRom();
+		writeByte(CMD_RSCRATCHPAD);
+
+		temperatureL = readByte();
+		temperatureH = readByte();
+		
+		command_out[3] = temperatureH;
+		command_out[4] = temperatureL;
+		command_out[5] = 0;
+		command_out[6] = 0;
+		
+		makeCRC16(command_out, 9, FALSE);
+		
+		for (uint8_t i = 0; i < 9; i++)
+		{
+			uart_putc(command_out[i]);
+		}
 		
 	}
 	else if(command_in[2] == REQ_SEACH_DS18B20)
 	{
+		unsigned char command_out[7];
 		
+		memset(command_out,0,7);
+		
+		command_out[0] = 0x01;
+		command_out[1] = 7;
+		command_out[2] = ANS_SEACH_DS18B20;
+		command_out[3] = 0;
+		command_out[4] = 0;
+		makeCRC16(command_out, 7, FALSE);
+		
+		for (uint8_t i = 0; i < 7; i++)
+		{
+			uart_putc(command_out[i]);
+		}
 	}
 	
 }
@@ -62,10 +108,13 @@ void process_command()
 
 	if (makeCRC16(command_in, length_receive_msg, TRUE) == 0)
 	{
+		main_parser();
+		/*
 		for (uint8_t i = 0; i < length_receive_msg; i++)
 		{
 			uart_putc(command_in[i]);
 		}
+		*/
 	}
 }
 
@@ -165,7 +214,7 @@ double getTempMult(uint64_t ds18b20s) {
 
 int main(void)
 {
-	double temperature;
+	
 
 	uart_init(UART_BAUD_SELECT(UART_BAUD_RATE, F_CPU));
 
@@ -173,6 +222,8 @@ int main(void)
 
 	sei();
 	
+	/*
+	double temperature;
 	
 	const uint8_t n_ds18b20 = 2;
 	uint64_t roms[n_ds18b20];
@@ -186,7 +237,8 @@ int main(void)
 		uart_puts(RETURN_NEWLINE);
 		_delay_ms(500);
 	}
-
+	*/
+	
 	memset(data_in, 0, 128);
 
 	for (;;)
