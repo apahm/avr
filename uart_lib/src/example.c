@@ -33,6 +33,26 @@ unsigned char command_in[128];
 uint8_t flag_first_symbol = 0;
 uint8_t length_msg = 0;
 
+volatile uint16_t display_val = 0;
+
+ISR(ADC_vect) {
+	display_val	= ADC;
+}
+
+void adc_init(void)
+{
+	// ADC init
+	//  reference voltage: supply AVCC
+	//  channel ADC0
+	//  clock: f_cpu/d
+	//  Left-aligned result
+	ADMUX  = (0 << REFS1) | (1 << REFS0) | (1 << ADLAR)
+	| (0 << MUX3)  | (0 << MUX2)  | (0 << MUX1) | (0 << MUX0);
+	ADCSRA = (1 << ADEN)  | (1 << ADSC)  | (1 << ADATE) | (1 << ADIE)
+	| (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0);
+	ADCSRB = (0 << ADTS2) | (0 << ADTS1) | (0 << ADTS0); // Free running mode
+}
+
 void main_parser()
 {
 	if(command_in[2] == REQ_TEMP_DS18B20)
@@ -219,6 +239,8 @@ int main(void)
 	uart_init(UART_BAUD_SELECT(UART_BAUD_RATE, F_CPU));
 
 	oneWireInit(PINC0);
+
+	//adc_init();
 
 	sei();
 	
