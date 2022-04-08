@@ -13,5 +13,7 @@
 #define REQ_SEACH_DS18B20 0x20
 #define ANS_SEACH_DS18B20 0x21
 
+#define REQ_ADC_BUFFER 0x22
+#define ANS_ADC_BUFFER 0x23
 
 #endif /* CONFIG_H_ */

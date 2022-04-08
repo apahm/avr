@@ -27,16 +27,29 @@
 #define RETURN_NEWLINE "\r\n"
 
 unsigned char data_count = 0;
-unsigned char data_in[128];
-unsigned char command_in[128];
+unsigned char data_in[32];
+unsigned char command_in[32];
+
+volatile int16_t adc_buffer[128];
+volatile uint8_t buff_ready = 0;
+volatile uint8_t buff_work = 0;
+volatile uint8_t count_adc_buff = 0;
 
 uint8_t flag_first_symbol = 0;
 uint8_t length_msg = 0;
 
-volatile uint16_t display_val = 0;
-
 ISR(ADC_vect) {
-	display_val	= ADC;
+	if(buff_work)
+	{
+		*(adc_buffer + count_adc_buff) = ADC;
+		count_adc_buff++;
+		if(count_adc_buff == 128)
+		{
+			buff_ready = 1;
+			count_adc_buff = 0;
+			buff_work = 0;
+		}
+	}
 }
 
 void adc_init(void)
@@ -109,7 +122,38 @@ void main_parser()
 			uart_putc(command_out[i]);
 		}
 	}
-	
+	else if(command_in[2] == REQ_ADC_BUFFER)
+	{
+		if(command_in[3] == 128)
+		{
+			const uint8_t len_cmd_out = 256 + 5;
+			
+			unsigned char command_out[len_cmd_out];
+			memset(command_out, 0, len_cmd_out);
+			
+			command_out[0] = 0x01;
+			command_out[1] = 7;
+			command_out[2] = ANS_ADC_BUFFER;
+			
+			memset(adc_buffer, 0, 256);
+			
+			buff_work = 1;
+			
+			while(!buff_ready);
+			
+			buff_ready = 0;
+			
+			memcpy(&command_out[3], adc_buffer, 256);
+						
+			makeCRC16(command_out, len_cmd_out, FALSE);
+							
+			for (uint8_t i = 0; i < len_cmd_out; i++)
+			{
+				uart_putc(command_out[i]);
+			}
+		
+		}
+	}
 }
 
 void copy_command()
@@ -234,13 +278,11 @@ double getTempMult(uint64_t ds18b20s) {
 
 int main(void)
 {
-	
-
 	uart_init(UART_BAUD_SELECT(UART_BAUD_RATE, F_CPU));
 
 	oneWireInit(PINC0);
 
-	//adc_init();
+	adc_init();
 
 	sei();
 	
@@ -261,8 +303,9 @@ int main(void)
 	}
 	*/
 	
-	memset(data_in, 0, 128);
-
+	memset(data_in, 0, 32);
+	memset(command_in, 0, 32);
+	
 	for (;;)
 	{
 		unsigned int c = uart_getc();
@@ -273,7 +316,7 @@ int main(void)
 				data_count = 0;
 				length_msg = 0;
 				flag_first_symbol = 0;
-				memset(data_in, 0, 128);
+				memset(data_in, 0, 32);
 			}
 		}
 		else
