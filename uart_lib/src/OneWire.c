@@ -169,7 +169,7 @@ void searchRom(uint64_t *roms, uint8_t *n)
 	{
 		do
 		{
-			lastAddress = searchNextAddress(lastAddress, lastDiscrepancy);
+			lastAddress = searchNextAddress(lastAddress, &lastDiscrepancy);
 			if (lastAddress != DEVICES_ERROR)
 			{
 				uint8_t crc = crcCheck(lastAddress, 8);

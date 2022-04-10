@@ -29,6 +29,8 @@
 unsigned char data_count = 0;
 unsigned char data_in[32];
 unsigned char command_in[32];
+uint8_t n_ds18b20 = 5;
+uint64_t roms[2];
 
 volatile int16_t adc_buffer[128];
 volatile uint8_t buff_ready = 0;
@@ -80,21 +82,32 @@ void main_parser()
 		uint8_t temperatureL;
 		uint8_t temperatureH;
 
-		skipRom();
-		writeByte(CMD_CONVERTTEMP);
 
-		_delay_ms(750);
+		for (uint8_t i = 0; i < n_ds18b20; i++)
+		{
+			setDevice(roms[i]);
+			writeByte(CMD_CONVERTTEMP);
+			
+			_delay_ms(750);
 
-		skipRom();
-		writeByte(CMD_RSCRATCHPAD);
+			setDevice(roms[i]);
+			writeByte(CMD_RSCRATCHPAD);
 
-		temperatureL = readByte();
-		temperatureH = readByte();
-		
-		command_out[3] = temperatureH;
-		command_out[4] = temperatureL;
-		command_out[5] = 0;
-		command_out[6] = 0;
+			temperatureL = readByte();
+			temperatureH = readByte();
+			if(i == 0)
+			{
+				command_out[3] = temperatureH;
+				command_out[4] = temperatureL;
+			}
+			else if(i == 1)
+			{
+				command_out[5] = temperatureH;
+				command_out[6] = temperatureL;
+			}
+
+			_delay_ms(200);
+		}
 		
 		makeCRC16(command_out, 9, FALSE);
 		
@@ -282,18 +295,16 @@ int main(void)
 
 	oneWireInit(PINC0);
 
-	adc_init();
+	//adc_init();
 
 	sei();
 	
-	/*
+	
 	double temperature;
 	
-	const uint8_t n_ds18b20 = 2;
-	uint64_t roms[n_ds18b20];
+	searchRom(roms, &n_ds18b20);
 	
-	searchRom(roms, n_ds18b20);
-	
+	/*
 	for (uint8_t i = 0; i < n_ds18b20; i++)
 	{
 		temperature = getTempMult(roms[i]);
