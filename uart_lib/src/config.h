@@ -1,7 +1,6 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
-
 #define F_CPU              2000000UL
 #define ONE_WIRE_PORT      PORTC
 #define ONE_WIRE_DDR       DDRC
@@ -10,10 +9,22 @@
 #define REQ_TEMP_DS18B20 0x18
 #define ANS_TEMP_DS18B20 0x19
 
-#define REQ_SEACH_DS18B20 0x20
-#define ANS_SEACH_DS18B20 0x21
+#define REQ_INIT_DS18B20 0x20
+#define ANS_INIT_DS18B20 0x21
 
 #define REQ_ADC_BUFFER 0x22
 #define ANS_ADC_BUFFER 0x23
+
+#define REQ_INIT_ADC_SOUND 0x24
+#define ANS_INIT_ADC_SOUND 0x25
+
+#define REQ_INIT_ADC_LIGHT 0x26
+#define ANS_INIT_ADC_LIGHT 0x27
+
+#define REQ_INIT_HX711 0x30
+#define ANS_INIT_HX711 0x31
+
+#define REQ_WEIGHT_HX711 0x32
+#define ANS_WEIGHT_HX711 0x33
 
 #endif /* CONFIG_H_ */

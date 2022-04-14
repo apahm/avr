@@ -6,9 +6,11 @@
 #include <avr/pgmspace.h>
 #include <avr/delay.h>
 
+
 #include "uart.h"
 #include "OneWire.h"
 #include "crc16.h"
+
 /* Define CPU frequency in Hz in Makefile or toolchain compiler configuration */
 
 #ifndef F_CPU
@@ -54,7 +56,7 @@ ISR(ADC_vect) {
 	}
 }
 
-void adc_init(void)
+void adc_init(uint8_t number_pin)
 {
 	// ADC init
 	//  reference voltage: supply AVCC
@@ -81,7 +83,6 @@ void main_parser()
 		
 		uint8_t temperatureL;
 		uint8_t temperatureH;
-
 
 		for (uint8_t i = 0; i < n_ds18b20; i++)
 		{
@@ -117,20 +118,22 @@ void main_parser()
 		}
 		
 	}
-	else if(command_in[2] == REQ_SEACH_DS18B20)
+	else if(command_in[2] == REQ_INIT_DS18B20)
 	{
-		unsigned char command_out[7];
+		unsigned char command_out[6];
 		
-		memset(command_out,0,7);
+		memset(command_out, 0, 6);
+		
+		searchRom(roms, &n_ds18b20);
 		
 		command_out[0] = 0x01;
-		command_out[1] = 7;
-		command_out[2] = ANS_SEACH_DS18B20;
-		command_out[3] = 0;
-		command_out[4] = 0;
-		makeCRC16(command_out, 7, FALSE);
+		command_out[1] = 6;
+		command_out[2] = ANS_INIT_DS18B20;
+		command_out[3] = n_ds18b20;
+
+		makeCRC16(command_out, 6, FALSE);
 		
-		for (uint8_t i = 0; i < 7; i++)
+		for (uint8_t i = 0; i < 6; i++)
 		{
 			uart_putc(command_out[i]);
 		}
@@ -164,9 +167,90 @@ void main_parser()
 			{
 				uart_putc(command_out[i]);
 			}
-		
 		}
 	}
+	else if(command_in[2] == REQ_INIT_ADC_SOUND)
+	{
+		unsigned char command_out[6];
+		memset(command_out, 0, 6);
+		
+		command_out[0] = 0x01;
+		command_out[1] = 6;
+		command_out[2] = ANS_INIT_ADC_SOUND;
+		command_out[3] = TRUE;
+		
+		adc_init(0);
+		
+		makeCRC16(command_out, 6, FALSE);
+		
+		for (uint8_t i = 0; i < 6; i++)
+		{
+			uart_putc(command_out[i]);
+		}
+		
+	}
+	else if(command_in[2] == REQ_INIT_ADC_LIGHT)
+	{
+		unsigned char command_out[6];
+		
+		memset(command_out,0,6);
+		
+		command_out[0] = 0x01;
+		command_out[1] = 6;
+		command_out[2] = ANS_INIT_ADC_LIGHT;
+		command_out[3] = TRUE;
+		
+		adc_init(0);
+		
+		makeCRC16(command_out, 6, FALSE);
+		
+		for (uint8_t i = 0; i < 6; i++)
+		{
+			uart_putc(command_out[i]);
+		}
+	}
+	else if(command_in[2] == REQ_INIT_HX711)
+	{
+		unsigned char command_out[6];
+		memset(command_out, 0, 6);
+		
+		command_out[0] = 0x01;
+		command_out[1] = 6;
+		command_out[2] = ANS_INIT_HX711;
+		command_out[3] = TRUE;
+		
+		makeCRC16(command_out, 6, FALSE);
+		
+		for (uint8_t i = 0; i < 6; i++)
+		{
+			uart_putc(command_out[i]);
+		}
+		
+	}
+	else if(command_in[2] == REQ_WEIGHT_HX711)
+	{
+		unsigned char command_out[9];
+		
+		memset(command_out,0,9);
+		
+		uint32_t weight = 0xFF6655AA;
+		
+		command_out[0] = 0x01;
+		command_out[1] = 6;
+		command_out[2] = ANS_WEIGHT_HX711;
+		command_out[3] = weight & 0xFF;
+		command_out[4] = (weight >> 8) & 0xFF;
+		command_out[5] = (weight >> 16) & 0xFF;
+		command_out[6] = (weight >> 24);
+		
+		
+		makeCRC16(command_out, 9, FALSE);
+		
+		for (uint8_t i = 0; i < 9; i++)
+		{
+			uart_putc(command_out[i]);
+		}
+	}	
 }
 
 void copy_command()
@@ -186,108 +270,10 @@ void process_command()
 	if (makeCRC16(command_in, length_receive_msg, TRUE) == 0)
 	{
 		main_parser();
-		/*
-		for (uint8_t i = 0; i < length_receive_msg; i++)
-		{
-			uart_putc(command_in[i]);
-		}
-		*/
 	}
 }
 
-void explodeDoubleNumber(int *numbers, double flt)
-{
-	numbers[0] = abs((int)flt);
-	numbers[1] = abs((int)((flt - ((int)flt)) * 10));
-}
 
-void printTemp(double d)
-{
-	char text[17] = "T = ";
-	int fs[2];
-	char num[5];
-
-	explodeDoubleNumber(fs, d);
-	if (d < 0)
-	{
-		strcat(text, "-");
-	}
-
-	itoa(fs[0], num, 10);
-	strcat(text, num);
-	strcat(text, ".");
-	itoa(fs[1], num, 10);
-	strcat(text, num);
-	strcat(text, "'C");
-	uart_puts(text);
-}
-
-double getTemp(void)
-{
-	uint8_t temperatureL;
-	uint8_t temperatureH;
-	double retd = 0;
-
-	skipRom();
-	writeByte(CMD_CONVERTTEMP);
-
-	_delay_ms(750);
-
-	skipRom();
-	writeByte(CMD_RSCRATCHPAD);
-
-	temperatureL = readByte();
-	temperatureH = readByte();
-
-	retd = ((temperatureH << 8) + temperatureL) * 0.0625;
-
-	return retd;
-}
-
-inline void printTempMult(double d, uint8_t i) {
-	char text[17] = "T[";
-	int fs[2];
-	char num[5];
-	
-	itoa(i, num, 10);
-	strcat(text, num);
-	strcat(text, "]=");
-	
-	explodeDoubleNumber(fs, d);
-	if (d < 0) {
-		strcat(text, "-");
-	}
-	itoa(fs[0], num, 10);
-	strcat(text, num);
-	strcat(text, ".");
-	itoa(fs[1], num, 10);
-	strcat(text, num);
-	strcat(text, "'C");
-	uart_puts(text);
-	uart_puts(RETURN_NEWLINE);
-}
-
-double getTempMult(uint64_t ds18b20s) {
-	uint8_t temperatureL;
-	uint8_t temperatureH;
-	double retd = 0;
-
-
-	setDevice(ds18b20s);
-	writeByte(CMD_CONVERTTEMP);
-
-	_delay_ms(750);
-
-	setDevice(ds18b20s);
-	writeByte(CMD_RSCRATCHPAD);
-
-	temperatureL = readByte();
-	temperatureH = readByte();
-
-	retd = ((temperatureH << 8) + temperatureL) * 0.0625;
-
-	return retd;
-}
 
 int main(void)
 {
@@ -295,24 +281,7 @@ int main(void)
 
 	oneWireInit(PINC0);
 
-	//adc_init();
-
 	sei();
-	
-	
-	double temperature;
-	
-	searchRom(roms, &n_ds18b20);
-	
-	/*
-	for (uint8_t i = 0; i < n_ds18b20; i++)
-	{
-		temperature = getTempMult(roms[i]);
-		printTempMult(temperature,i);
-		uart_puts(RETURN_NEWLINE);
-		_delay_ms(500);
-	}
-	*/
 	
 	memset(data_in, 0, 32);
 	memset(command_in, 0, 32);
