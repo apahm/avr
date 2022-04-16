@@ -6,7 +6,6 @@
 #include <avr/pgmspace.h>
 #include <avr/delay.h>
 
-
 #include "uart.h"
 #include "OneWire.h"
 #include "crc16.h"
@@ -219,6 +218,15 @@ void main_parser()
 		command_out[2] = ANS_INIT_HX711;
 		command_out[3] = TRUE;
 		
+		HX711_init(128);
+		
+		HX711_set_scale(1.f/*242300.88*/);
+		
+		HX711_set_gain(128);
+		
+		//HX711_tare(10);
+		//double tare_weight = HX711_get_offset();
+		
 		makeCRC16(command_out, 6, FALSE);
 		
 		for (uint8_t i = 0; i < 6; i++)
@@ -235,6 +243,9 @@ void main_parser()
 		
 		uint32_t weight = 0xFF6655AA;
 		
+		//uint32_t current_weight_128 = HX711_get_units(10);
+		uint32_t current_weight = HX711_read_average(10);
+		
 		command_out[0] = 0x01;
 		command_out[1] = 6;
 		command_out[2] = ANS_WEIGHT_HX711;
@@ -242,7 +253,6 @@ void main_parser()
 		command_out[4] = (weight >> 8) & 0xFF;
 		command_out[5] = (weight >> 16) & 0xFF;
 		command_out[6] = (weight >> 24);
-		
 		
 		makeCRC16(command_out, 9, FALSE);
 		
