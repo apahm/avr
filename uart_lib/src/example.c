@@ -9,7 +9,7 @@
 #include "uart.h"
 #include "OneWire.h"
 #include "crc16.h"
-
+#include "HX711.h"
 /* Define CPU frequency in Hz in Makefile or toolchain compiler configuration */
 
 #ifndef F_CPU
@@ -219,12 +219,11 @@ void main_parser()
 		command_out[3] = TRUE;
 		
 		HX711_init(128);
-		
-		HX711_set_scale(1.f/*242300.88*/);
+		HX711_set_scale(1.55);
 		
 		HX711_set_gain(128);
 		
-		//HX711_tare(10);
+		HX711_tare(10);
 		//double tare_weight = HX711_get_offset();
 		
 		makeCRC16(command_out, 6, FALSE);
@@ -241,18 +240,18 @@ void main_parser()
 		
 		memset(command_out,0,9);
 		
-		uint32_t weight = 0xFF6655AA;
-		
+		uint32_t current_weight = 0;
 		//uint32_t current_weight_128 = HX711_get_units(10);
-		uint32_t current_weight = HX711_read_average(10);
+		current_weight = (uint32_t)HX711_get_units(10);
+		//current_weight = current_weight * 0.035274;
 		
 		command_out[0] = 0x01;
-		command_out[1] = 6;
+		command_out[1] = 9;
 		command_out[2] = ANS_WEIGHT_HX711;
-		command_out[3] = weight & 0xFF;
-		command_out[4] = (weight >> 8) & 0xFF;
-		command_out[5] = (weight >> 16) & 0xFF;
-		command_out[6] = (weight >> 24);
+		command_out[3] = current_weight & 0xFF;
+		command_out[4] = (current_weight >> 8) & 0xFF;
+		command_out[5] = (current_weight >> 16) & 0xFF;
+		command_out[6] = (current_weight >> 24);
 		
 		makeCRC16(command_out, 9, FALSE);
 		
@@ -292,6 +291,13 @@ int main(void)
 	oneWireInit(PINC0);
 
 	sei();
+			
+	HX711_init(128);
+	HX711_set_scale(1.55);
+			
+	HX711_set_gain(128);
+			
+	HX711_tare(10);
 	
 	memset(data_in, 0, 32);
 	memset(command_in, 0, 32);

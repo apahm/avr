@@ -1,6 +1,6 @@
 #ifndef HX711_h
 #define HX711_h
-
+	
     #define PD_SCK_PORT         PORTD	                        // Power Down and Serial Clock Input Port
     #define PD_SCK_DDR          DDRD                            // Power Down and Serial Clock DDR
     #define PD_SCK_PIN          PD5                             // Power Down and Serial Clock Pin

@@ -1,5 +1,4 @@
-#define __USE_C99_MATH
-
+#define F_CPU              2000000UL
 #include <stdbool.h>
 #include <stdint.h>
 #include <avr/io.h>
